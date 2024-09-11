@@ -16,11 +16,15 @@ pub inline fn inb(port: u16) u8 {
 }
 
 pub const GDTR = extern struct {
-    size_in_bytes: u16,
+    size_in_bytes_minus_one: u16,
     offset: u32 align(2),
 
-    pub fn init(offset: u32, len: u16) @This() {
-        return .{ .size_in_bytes = len * @sizeOf(GDTR), .offset = offset };
+    pub fn init(offset: u32, entries: u8) @This() {
+        return .{ .size_in_bytes = entries * @sizeOf(GDTR) - 1, .offset = offset };
+    }
+
+    pub fn len(self: @This()) u8 {
+        return (self.size_in_bytes_minus_one + 1) / @sizeOf(GDTR);
     }
 };
 
@@ -31,6 +35,8 @@ pub const GDT = packed struct {
     limit_16_20: u4,
     flags: Flags,
     base_24_32: u8,
+
+    pub const empty = std.mem.zeroes(@This());
 
     pub const Access = packed struct {
         accessed: bool = true,
@@ -85,11 +91,15 @@ pub const GDT = packed struct {
 };
 
 pub const IDTR = extern struct {
-    size_in_bytes: u16,
+    size_in_bytes_minus_one: u16,
     offset: u32 align(2),
 
-    pub fn init(offset: u32, len: u8) @This() {
-        return .{ .size_in_bytes = len * @sizeOf(IDTR), .offset = offset };
+    pub fn init(offset: u32, entries: u8) @This() {
+        return .{ .size_in_bytes = entries * @sizeOf(IDTR) - 1, .offset = offset };
+    }
+
+    pub fn len(self: @This()) u8 {
+        return (self.size_in_bytes_minus_one + 1) / @sizeOf(IDTR);
     }
 };
 
@@ -104,6 +114,7 @@ pub const IDT = packed struct {
     offset_16_32: u16,
 
     pub const Gate = enum(u4) {
+        null = 0,
         task = 0x5,
         int_16 = 0x6,
         trap_16 = 0x7,
@@ -140,6 +151,8 @@ pub const IDT = packed struct {
             .privilege = self.privilege,
         };
     }
+
+    pub const empty = std.mem.zeroes(@This());
 };
 
 comptime {

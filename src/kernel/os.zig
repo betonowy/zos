@@ -5,6 +5,7 @@ pub const io = @import("os/io.zig");
 pub const system = @import("os/system.zig");
 pub const tele = @import("os/teleprompter.zig");
 pub const x86 = @import("os/x86.zig");
+pub const interrupts = @import("os/interrupts.zig");
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);

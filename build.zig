@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) !void {
         .name = "kernel.elf",
         .target = target,
         .optimize = .ReleaseSmall,
-        .root_source_file = b.path("src/kernel/main.zig"),
+        .root_source_file = b.path("src/kernel/root.zig"),
         .strip = true,
         .single_threaded = true,
     });

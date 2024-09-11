@@ -25,12 +25,18 @@ gdt_descriptor:
     dw gdt_end - gdt_start
     dd gdt_start
 
+; KiB of low memory available
+bios_data_conv_mem: dw 0
+bios_data_ext_mem_0x88: dw 0
+bios_data_ext_mem_0x8a: dd 0
+
 CODE_SEG equ gdt_code_descriptor - gdt_start
 DATA_SEG equ gdt_data_descriptor - gdt_start
 
 extended_boot_16:
-    call process_elf_file
+    call get_bios_data
     cli
+    call process_elf_file
     lgdt [gdt_descriptor]
     mov eax, cr0
     or al, 1
@@ -84,4 +90,20 @@ endstruc
     jmp .load_program_headers
 .finish_program_headers:
     leave
+    ret
+
+get_bios_data:
+    clc
+    int 0x12
+    jnc .success_conv_mem
+    mov ax, 64
+.success_conv_mem:
+    mov [bios_data_conv_mem], ax
+    mov ah, 0x88
+    clc
+    int 0x15
+    jnc .success_ext_mem
+    mov ax, 0
+.success_ext_mem:
+    mov [bios_data_ext_mem_0x88], ax
     ret
