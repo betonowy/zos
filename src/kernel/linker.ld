@@ -14,7 +14,7 @@ SECTIONS {
     . = SIZEOF_HEADERS;
 
     .idt ALIGN(4) : {
-        KEEP(*(.idt))
+        *(.idt)
     } > idt_mem :idt
 
     .text ALIGN(4) : {

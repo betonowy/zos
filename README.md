@@ -4,7 +4,7 @@ This is an educational project for exploring the possibilities of low level prog
 
 ## Build requirements
 
-- Zig 0.12
+- Zig 0.14
 - NASM assembler
 - mtools (mcopy) (can be replaced with zig toolchain in the future)
 

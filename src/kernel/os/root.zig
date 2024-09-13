@@ -1,11 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const x86 = @import("x86");
 
-pub const io = @import("os/io.zig");
-pub const system = @import("os/system.zig");
-pub const tele = @import("os/teleprompter.zig");
-pub const x86 = @import("os/x86.zig");
-pub const interrupts = @import("os/interrupts.zig");
+pub const io = @import("io.zig");
+pub const system = @import("system.zig");
+pub const tele = @import("teleprompter.zig");
+pub const int = @import("int.zig");
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);
@@ -33,5 +33,5 @@ pub fn print(comptime fmt: []const u8, args: anytype) void {
 
 pub inline fn halt() noreturn {
     @setCold(true);
-    while (true) asm volatile ("hlt");
+    while (true) x86.ass.halt();
 }

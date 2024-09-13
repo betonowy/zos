@@ -1,19 +1,6 @@
 const std = @import("std");
 
-pub inline fn outb(port: u16, value: u8) void {
-    _ = asm volatile ("outb %al, %dx"
-        : [ret] "={eax}" (-> usize),
-        : [value] "{al}" (value),
-          [port] "{dx}" (port),
-    );
-}
-
-pub inline fn inb(port: u16) u8 {
-    return asm volatile ("inb %dx"
-        : [ret] "={al}" (-> u8),
-        : [port] "{dx}" (port),
-    );
-}
+pub const ass = @import("ass.zig");
 
 pub const GDTR = extern struct {
     size_in_bytes_minus_one: u16,
@@ -94,8 +81,8 @@ pub const IDTR = extern struct {
     size_in_bytes_minus_one: u16,
     offset: u32 align(2),
 
-    pub fn init(offset: u32, entries: u8) @This() {
-        return .{ .size_in_bytes = entries * @sizeOf(IDTR) - 1, .offset = offset };
+    pub fn init(offset: u32, entries: u16) @This() {
+        return .{ .size_in_bytes_minus_one = entries * @sizeOf(IDTR) - 1, .offset = offset };
     }
 
     pub fn len(self: @This()) u8 {

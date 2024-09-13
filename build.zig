@@ -14,10 +14,18 @@ pub fn build(b: *std.Build) !void {
         .name = "kernel.elf",
         .target = target,
         .optimize = .ReleaseSmall,
-        .root_source_file = b.path("src/kernel/root.zig"),
+        .root_source_file = b.path("src/kernel/main/root.zig"),
         .strip = true,
         .single_threaded = true,
     });
+
+    const kernel_mod_x86 = b.addModule("x86", .{ .root_source_file = b.path("src/kernel/x86/root.zig") });
+
+    const kernel_mod_os = b.addModule("os", .{ .root_source_file = b.path("src/kernel/os/root.zig") });
+    kernel_mod_os.addImport("x86", kernel_mod_x86);
+
+    kernel.root_module.addImport("os", kernel_mod_os);
+    kernel.root_module.addImport("x86", kernel_mod_x86);
 
     kernel.setLinkerScript(b.path("src/kernel/linker.ld"));
     kernel.entry = .{ .symbol_name = "main" };

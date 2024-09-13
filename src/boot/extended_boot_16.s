@@ -28,7 +28,7 @@ gdt_descriptor:
 ; KiB of low memory available
 bios_data_conv_mem: dw 0
 bios_data_ext_mem_0x88: dw 0
-bios_data_ext_mem_0x8a: dd 0
+bios_data_a20_state: db 0
 
 CODE_SEG equ gdt_code_descriptor - gdt_start
 DATA_SEG equ gdt_data_descriptor - gdt_start
@@ -104,6 +104,90 @@ get_bios_data:
     int 0x15
     jnc .success_ext_mem
     mov ax, 0
+    jmp .failed_a20 ; no ext mem, no point enabling a20
 .success_ext_mem:
     mov [bios_data_ext_mem_0x88], ax
+    mov byte [bios_data_a20_state], 1
+    call is_a20_on
+    jc .success_a20
+    call enable_a20_bios
+    call is_a20_on
+    jc .success_a20
+    call enable_a20_kb
+    call is_a20_on
+    jc .success_a20
+.failed_a20:
+    mov byte [bios_data_a20_state], 0
+.success_a20:
+    ret
+
+is_a20_on:
+    cli
+    pushad
+    xor ax, ax
+    mov ds, ax
+    not ax
+    mov es, ax
+    mov si, 0x7dfe + 0x00
+    mov di, 0x7dfe + 0x10
+    mov al, [ds:si]
+    mov dl, al
+    not dl
+    mov [es:di], dl
+    cmp al, [ds:si]
+    je .a20_on
+    xor ax, ax
+    mov es, ax
+    popad
+    sti
+    clc
+    ret
+.a20_on:
+    xor ax, ax
+    mov es, ax
+    popad
+    sti
+    stc
+    ret
+
+enable_a20_bios:
+    mov ax, 0x2401
+    int 0x15
+    ret
+
+enable_a20_kb:
+    push ax
+    call .enable_a20_wait_1
+    mov al, 0xad
+    out 0x64, al
+    call .enable_a20_wait_1
+    mov al, 0xd0
+    out 0x64, al
+    call .enable_a20_wait_2
+    in al, 0x60
+    push eax
+    call .enable_a20_wait_1
+    mov al, 0xd1
+    out 0x64, al
+    call .enable_a20_wait_1
+    pop eax
+    or al, 2
+    out 0x60, al
+    call .enable_a20_wait_1
+    mov al, 0xae
+    out 0x64, al
+    call .enable_a20_wait_1
+    pop ax
+    ret
+
+.enable_a20_wait_1:
+    in al, 0x64
+    test al, 2
+    jnz .enable_a20_wait_1
+    ret
+
+.enable_a20_wait_2:
+    in al, 0x64
+    test al, 1
+    jnz .enable_a20_wait_2
     ret

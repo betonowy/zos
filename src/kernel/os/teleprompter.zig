@@ -1,5 +1,5 @@
 const std = @import("std");
-const x86 = @import("./x86.zig");
+const x86 = @import("x86");
 
 const column_count = 80;
 const row_count = 25;
@@ -72,7 +72,7 @@ fn initClear() void {
     initQuick();
 
     @memset(
-        @as(*[row_count * column_count]BufferType, @ptrCast(text_memory)),
+        @as([*]BufferType, @ptrCast(text_memory))[0 .. row_count * column_count],
         .{ .char = 0, .color = .{ .fg = current_color.fg, .bg = current_color.bg } },
     );
 }
@@ -85,17 +85,17 @@ pub fn enableCursor() void {
     const cursor_start = 1;
     const cursor_end = 2;
 
-    x86.outb(0x3d4, 0x0a);
-    x86.outb(0x3d5, (x86.inb(0x3d5) & 0xc0) | cursor_start);
-    x86.outb(0x3d4, 0x0b);
-    x86.outb(0x3d5, (x86.inb(0x3d5) & 0xe0) | cursor_end);
+    x86.ass.outb(0x3d4, 0x0a);
+    x86.ass.outb(0x3d5, (x86.ass.inb(0x3d5) & 0xc0) | cursor_start);
+    x86.ass.outb(0x3d4, 0x0b);
+    x86.ass.outb(0x3d5, (x86.ass.inb(0x3d5) & 0xe0) | cursor_end);
 
     updateCursorPosition();
 }
 
 pub fn disableCursor() void {
-    x86.outb(0x3d4, 0x0a);
-    x86.outb(0x3d5, 0x20);
+    x86.ass.outb(0x3d4, 0x0a);
+    x86.ass.outb(0x3d5, 0x20);
 }
 
 fn scrollLine() void {
@@ -117,10 +117,10 @@ fn needsScroll() bool {
 fn updateCursorPosition() void {
     const position = @as(u16, column) + @as(u16, row) * column_count;
 
-    x86.outb(0x3d4, 0x0f);
-    x86.outb(0x3d5, @intCast(position & 0xff));
-    x86.outb(0x3d4, 0x0e);
-    x86.outb(0x3d5, @intCast((position >> 8) & 0xff));
+    x86.ass.outb(0x3d4, 0x0f);
+    x86.ass.outb(0x3d5, @intCast(position & 0xff));
+    x86.ass.outb(0x3d4, 0x0e);
+    x86.ass.outb(0x3d5, @intCast((position >> 8) & 0xff));
 }
 
 pub fn charPrint(data: BufferType) void {

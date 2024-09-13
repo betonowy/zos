@@ -1,6 +1,7 @@
 const std = @import("std");
 
-pub const os = @import("./os.zig");
+const os = @import("os");
+const x86 = @import("x86");
 
 pub const std_options = std.Options{
     .logFn = logFn,
@@ -40,20 +41,22 @@ fn logFn(comptime message_level: std.log.Level, comptime scope: @Type(.EnumLiter
 const KernelParams = extern struct {
     conv_mem: u16,
     ext_mem: u16,
+    a20_is_on: bool,
 };
 
 export fn main(params: *const KernelParams) linksection(".text.entry") noreturn {
     @setAlignStack(4);
+
     os.tele.init(.clear);
-    std.log.info("Conventional memory: {} KiB, Extended: {} KiB", .{ params.conv_mem, params.ext_mem });
+
+    std.log.info(
+        "Conventional memory: {} KiB, Extended: {} KiB, A20: {}",
+        .{ params.conv_mem, params.ext_mem, params.a20_is_on },
+    );
+
+    os.int.setup(idt[0..]);
+
     os.halt();
 }
 
-export const idt: [2]os.x86.IDT linksection(".idt") = .{
-    os.x86.IDT.init(.{
-        .offset = 0,
-        .segment_selector = 0,
-        .gate = .int_32,
-        .privilege = 0,
-    }),
-} ++ .{os.x86.IDT.empty} ** 1;
+const idt: *allowzero [0x80]x86.IDT = @ptrFromInt(0x0);
