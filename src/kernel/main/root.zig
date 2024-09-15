@@ -59,7 +59,7 @@ export fn main(params: *const KernelParams) linksection(".text.entry") noreturn 
     os.int.setup(idt[0..]);
     x86.ass.sti();
     os.floppy.init(fd_dma_mem);
-    os.floppy.request(.{ .read_lba = 0 }) catch {};
+    os.floppy.request(.{ .read_lba = 1 }) catch {};
 
     while (true) {
         while (os.kb.popKeyData()) |data| {

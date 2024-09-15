@@ -33,8 +33,8 @@ pub fn init(p_dma_mem: []u8) void {
     log.debug("fd0: {s}", .{drive_info.fd0.str()});
     log.debug("fd1: {s}", .{drive_info.fd1.str()});
 
-    x86.ass.outb(Registers.data_fifo.toU16(), Commands.version.toU8());
     msrWaitRqm();
+    x86.ass.outb(Registers.data_fifo.toU16(), Commands.version.toU8());
     log.debug("Version: 0x{x}", .{x86.ass.inb(Registers.data_fifo.toU16())});
 
     dma.singleChannelMask(.{ .channel = 2, .state = true });
@@ -354,24 +354,17 @@ fn handleReading() void {
 
     irq_flag = true;
 
-    msrWaitRqm();
-    x86.ass.outb(Registers.data_fifo.toU16(), Commands.read_data.toU8() | CommandMode.mfm.toU8());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P1{ .drive = 0, .head = chs.head }).toU3());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P2{ .cylinder = chs.cylinder }).toU8());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P3{ .head = chs.head }).toU1());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P4{ .sector = chs.sector }).toU8());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P5{}).toU8());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P6{ .eot = drive_info.fd0.toLayout().?.sectors_per_track }).toU8());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P7{}).toU8());
-    msrWaitRqmDio(false);
-    x86.ass.outb(Registers.data_fifo.toU16(), (cmd_read.P8{}).toU8());
+    fifoSendBytes(&.{
+        Commands.read_data.toU8() | CommandMode.mfm.toU8(),
+        (cmd_read.P1{ .drive = 0, .head = chs.head }).toU3(),
+        (cmd_read.P2{ .cylinder = chs.cylinder }).toU8(),
+        (cmd_read.P3{ .head = chs.head }).toU1(),
+        (cmd_read.P4{ .sector = chs.sector }).toU8(),
+        (cmd_read.P5{}).toU8(),
+        (cmd_read.P6{ .eot = drive_info.fd0.toLayout().?.sectors_per_track }).toU8(),
+        (cmd_read.P7{}).toU8(),
+        (cmd_read.P8{}).toU8(),
+    });
 
     current_request = req;
     transitionReadingWaitForIrq();
@@ -383,20 +376,16 @@ fn handleReadingWaitForIrq() void {
 
     if (irq_flag) return;
 
-    msrWaitRqm();
-    if (!cmd_read.R1.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).isOk()) @panic("R1 not ok");
-    msrWaitRqm();
-    if (!cmd_read.R2.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).isOk()) @panic("R2 not ok");
-    msrWaitRqm();
-    if (!cmd_read.R3.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).isOk()) @panic("R3 not ok");
-    msrWaitRqm();
-    if (cmd_read.R4.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).end_cylinder != chs.cylinder) log.debug("R4 not ok", .{});
-    msrWaitRqm();
-    if (cmd_read.R5.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).end_head != chs.head) log.debug("R5 not ok", .{});
-    msrWaitRqm();
-    if (cmd_read.R6.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).end_sector != chs.sector + 1) log.debug("R6 not ok", .{});
-    msrWaitRqm();
-    if (!cmd_read.R7.fromU8(x86.ass.inb(Registers.data_fifo.toU16())).isValid()) @panic("R7 not ok");
+    var bytes: [7]u8 = undefined;
+    fifoRecvBytes(bytes[0..]);
+
+    if (!cmd_read.R1.fromU8(bytes[0]).isOk()) @panic("R1 not ok");
+    if (!cmd_read.R2.fromU8(bytes[1]).isOk()) @panic("R2 not ok");
+    if (!cmd_read.R3.fromU8(bytes[2]).isOk()) @panic("R3 not ok");
+    if (cmd_read.R4.fromU8(bytes[3]).end_cylinder != chs.cylinder) log.debug("R4 not ok", .{});
+    if (cmd_read.R5.fromU8(bytes[4]).end_head != chs.head) log.debug("R5 not ok", .{});
+    if (cmd_read.R6.fromU8(bytes[5]).end_sector != chs.sector + 1) log.debug("R6 not ok", .{});
+    if (!cmd_read.R7.fromU8(bytes[6]).isValid()) @panic("R7 not ok");
 
     log.debug("Data: {x}", .{dma_mem[0..16]});
 
@@ -423,6 +412,7 @@ fn handleIdle() void {
 fn transitionIdle() void {
     state = .idle;
     state_change_tp = timer.getTick();
+    log.debug("Transition: idle", .{});
 }
 
 fn transitionDead() void {
@@ -507,11 +497,23 @@ const MainStatusRegister = packed struct {
 };
 
 fn msrWaitRqm() void {
-    // log.debug("RQM", .{});
     while (MainStatusRegister.fromU8(x86.ass.inb(Registers.main_status_datarate_select.toU16())).rqm == false) {}
 }
 
 fn msrWaitRqmDio(dio: bool) void {
-    // log.debug("RQMDIO", .{});
     while (MainStatusRegister.fromU8(x86.ass.inb(Registers.main_status_datarate_select.toU16())).isRqmDio(dio) == false) {}
+}
+
+fn fifoSendBytes(bytes: []const u8) void {
+    for (bytes, 0..) |byte, i| {
+        if (i == 0) msrWaitRqm() else msrWaitRqmDio(false);
+        x86.ass.outb(Registers.data_fifo.toU16(), byte);
+    }
+}
+
+fn fifoRecvBytes(bytes: []u8) void {
+    for (bytes) |*byte| {
+        msrWaitRqm();
+        byte.* = x86.ass.inb(Registers.data_fifo.toU16());
+    }
 }
