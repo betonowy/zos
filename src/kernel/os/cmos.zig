@@ -1,8 +1,8 @@
 const x86 = @import("x86");
 
 pub const FdInfo = packed struct {
-    fd1: Type,
-    fd0: Type,
+    fd1: Type = .no_drive,
+    fd0: Type = .no_drive,
 
     pub fn fromU8(value: u8) @This() {
         return @bitCast(value);

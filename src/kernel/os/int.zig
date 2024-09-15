@@ -5,6 +5,7 @@ const x86 = @import("x86");
 const teleprompter = @import("teleprompter.zig");
 const keyboard = @import("keyboard.zig");
 const floppy = @import("floppy.zig");
+const timer = @import("timer.zig");
 const os = @import("root.zig");
 
 pub const InstallParams = struct { segment_selector: u16, gate: x86.IDT.Gate, privilege: u2 };
@@ -32,6 +33,7 @@ const PIC_READ_ISR = 0x0b;
 pub fn setup(table: []allowzero volatile x86.IDT) void {
     for (table) |*entry| entry.* = x86.IDT.init(.{ .gate = .int_32, .privilege = 0, .segment_selector = 0x8, .offset = @intFromPtr(&isrNull) });
 
+    table[0x20] = x86.IDT.init(.{ .gate = .int_32, .privilege = 0, .segment_selector = 0x8, .offset = @intFromPtr(&isrTimer) });
     table[0x21] = x86.IDT.init(.{ .gate = .int_32, .privilege = 0, .segment_selector = 0x8, .offset = @intFromPtr(&isrKeyboardController) });
     table[0x26] = x86.IDT.init(.{ .gate = .int_32, .privilege = 0, .segment_selector = 0x8, .offset = @intFromPtr(&isrFloppy) });
 
@@ -89,6 +91,11 @@ fn isrNull() callconv(.Interrupt) void {
     const isr = getPicIsr();
     if (isr != 0) x86.ass.outb(port_pic_master_cmd, 0x20);
     if (isr & 0xff00 != 0) x86.ass.outb(port_pic_slave_cmd, 0x20);
+}
+
+fn isrTimer() callconv(.Interrupt) void {
+    timer.count();
+    irqHandled(.master);
 }
 
 fn isrKeyboardController() callconv(.Interrupt) void {

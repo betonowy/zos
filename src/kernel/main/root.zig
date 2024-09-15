@@ -3,6 +3,8 @@ pub const os = @import("os"); // has to be pub to override std handlers
 
 const x86 = @import("x86");
 
+const log = std.log.scoped(.main);
+
 pub const std_options = std.Options{
     .logFn = logFn,
     .log_level = .debug,
@@ -49,24 +51,26 @@ export fn main(params: *const KernelParams) linksection(".text.entry") noreturn 
 
     os.tele.init(.clear);
 
-    std.log.info(
+    log.debug(
         "Conventional memory: {} KiB, Extended: {} KiB, A20: {}",
         .{ params.conv_mem, params.ext_mem, params.a20_is_on },
     );
 
     os.int.setup(idt[0..]);
     x86.ass.sti();
-
-    os.floppy.init(dma_mem);
+    os.floppy.init(fd_dma_mem);
+    os.floppy.request(.{ .read_lba = 0 }) catch {};
 
     while (true) {
         while (os.kb.popKeyData()) |data| {
             _ = os.tele.stdoutWrite(&.{data});
         }
 
+        os.floppy.handle();
+
         x86.ass.halt();
     }
 }
 
 const idt: *allowzero [0x80]x86.IDT = @ptrFromInt(0x0);
-const dma_mem: *align(4) [0x200]u8 = @ptrFromInt(0x400);
+const fd_dma_mem: *align(4) [0x200]u8 = @ptrFromInt(0x400);
