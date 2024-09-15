@@ -1,6 +1,13 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) !void {
+    const safety = b.option(bool, "safe", "Compile with safety checks") orelse false;
+
+    const optimize: std.builtin.OptimizeMode = switch (safety) {
+        false => .ReleaseSmall,
+        true => .ReleaseSafe,
+    };
+
     const nasm = try b.findProgram(&.{"nasm"}, &.{});
     _ = try b.findProgram(&.{"mcopy"}, &.{});
 
@@ -13,7 +20,7 @@ pub fn build(b: *std.Build) !void {
     const kernel = b.addExecutable(.{
         .name = "kernel.elf",
         .target = target,
-        .optimize = .ReleaseSmall,
+        .optimize = optimize,
         .root_source_file = b.path("src/kernel/main/root.zig"),
         .strip = true,
         .single_threaded = true,
@@ -44,6 +51,10 @@ pub fn build(b: *std.Build) !void {
     mcopy_kernel.step.dependOn(&kernel.step);
     mcopy_kernel.step.dependOn(&bootloader.step);
     b.default_step.dependOn(&mcopy_kernel.step);
+
+    const truncate_image = try TruncatePaddingBytesInImage.create(b, "zig-out/bin/image.img", "zig-out/bin/image.img.short");
+    truncate_image.step.dependOn(&mcopy_kernel.step);
+    b.default_step.dependOn(&truncate_image.step);
 }
 
 const NasmStep = struct {
@@ -140,5 +151,61 @@ const Fat12CopyFileStep = struct {
         try run.step.makeFn(&run.step, opts);
         self.step.result_cached = false;
         self.step.result_peak_rss = run.step.result_peak_rss;
+    }
+};
+
+const TruncatePaddingBytesInImage = struct {
+    input: []const u8,
+    dest: []const u8,
+
+    step: std.Build.Step,
+
+    pub fn create(b: *std.Build, input: []const u8, dest: []const u8) !*@This() {
+        var self = try b.allocator.create(@This());
+
+        self.step = std.Build.Step.init(.{
+            .id = .custom,
+            .name = "mcopy",
+            .owner = b,
+            .makeFn = &make,
+        });
+
+        self.input = b.pathFromRoot(input);
+        self.dest = b.dupe(dest);
+
+        return self;
+    }
+
+    fn make(step: *std.Build.Step, opts: std.Build.Step.MakeOptions) anyerror!void {
+        const node = opts.progress_node.start("Truncated image", 1);
+        defer node.end();
+
+        const self: *TruncatePaddingBytesInImage = @fieldParentPtr("step", step);
+        var timer = try std.time.Timer.start();
+        defer self.step.result_duration_ns = timer.read();
+
+        const file_in = try self.step.owner.build_root.handle.openFile(self.input, .{});
+
+        var buf: [512]u8 = undefined;
+        var read_len: usize = 0;
+        var truncate_len: usize = 0;
+
+        while (true) {
+            const read_buf = buf[0..try file_in.read(buf[0..])];
+            read_len += read_buf.len;
+
+            for (read_buf) |byte| if (byte != 0) {
+                truncate_len = read_len;
+                break;
+            };
+
+            if (read_buf.len == 0) break;
+        }
+
+        const file_out = try self.step.owner.build_root.handle.createFile(self.dest, .{});
+        try file_out.writeFileAll(file_in, .{ .in_len = truncate_len });
+
+        self.step.result_cached = false;
+        self.step.result_peak_rss = 0;
     }
 };

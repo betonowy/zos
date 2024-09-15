@@ -6,6 +6,10 @@ pub const io = @import("io.zig");
 pub const system = @import("system.zig");
 pub const tele = @import("teleprompter.zig");
 pub const int = @import("int.zig");
+pub const kb = @import("keyboard.zig");
+pub const cmos = @import("cmos.zig");
+pub const floppy = @import("floppy.zig");
+pub const dma = @import("dma.zig");
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);

@@ -1,6 +1,6 @@
 const std = @import("std");
+pub const os = @import("os"); // has to be pub to override std handlers
 
-const os = @import("os");
 const x86 = @import("x86");
 
 pub const std_options = std.Options{
@@ -55,8 +55,18 @@ export fn main(params: *const KernelParams) linksection(".text.entry") noreturn 
     );
 
     os.int.setup(idt[0..]);
+    x86.ass.sti();
 
-    os.halt();
+    os.floppy.init(dma_mem);
+
+    while (true) {
+        while (os.kb.popKeyData()) |data| {
+            _ = os.tele.stdoutWrite(&.{data});
+        }
+
+        x86.ass.halt();
+    }
 }
 
 const idt: *allowzero [0x80]x86.IDT = @ptrFromInt(0x0);
+const dma_mem: *align(4) [0x200]u8 = @ptrFromInt(0x400);

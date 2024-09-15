@@ -1,4 +1,4 @@
-# ZOS - Minimal UNIX inspired system for i386 platform
+# ZOS - Minimal 32-bit kernel for i386 platform
 
 This is an educational project for exploring the possibilities of low level programming with Zig and also to learn about the building blocks of an operating system.
 

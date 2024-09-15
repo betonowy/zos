@@ -6,6 +6,7 @@ MEMORY {
 PHDRS {
     idt PT_LOAD;
     text PT_LOAD;
+    rodata PT_LOAD;
     data PT_LOAD;
     bss PT_LOAD;
 }
@@ -13,22 +14,25 @@ PHDRS {
 SECTIONS {
     . = SIZEOF_HEADERS;
 
-    .idt ALIGN(4) : {
+    .idt : ALIGN(4) {
         *(.idt)
     } > idt_mem :idt
 
-    .text ALIGN(4) : {
+    .text : ALIGN(4) {
         *(.text.entry)
         *(.text*)
     } > kernel_region :text
 
-    .data : ALIGN(4) {
+    .rodata : ALIGN(4) {
         *(.rodata*)
-        *(.data)
+    } > kernel_region :data
+
+    .data : ALIGN(4) {
+        *(.data*)
     } > kernel_region :data
 
     .bss : ALIGN(4) {
-        *(.bss)
+        *(.bss*)
     } > kernel_region :bss
 
     /* We don't need exception handling in here, bloat! */
