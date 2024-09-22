@@ -39,7 +39,7 @@ pub inline fn cli() void {
 }
 
 /// Load interrupt descriptor table register
-pub inline fn lidt(idtr: x86.IDTR) void {
+pub inline fn lidt(idtr: x86.segment.DescriptorRegister) void {
     _ = asm volatile ("lidt (%eax)"
         : [ret] "={eax}" (-> usize),
         : [idtr] "{eax}" (&idtr),
@@ -47,9 +47,16 @@ pub inline fn lidt(idtr: x86.IDTR) void {
 }
 
 /// Load global descriptor table register
-pub inline fn lgdt(gdtr: x86.GDTR) void {
+pub inline fn lgdt(gdtr: x86.segment.DescriptorRegister) void {
     _ = asm volatile ("lgdt (%eax)"
         : [ret] "={eax}" (-> usize),
         : [gdtr] "{eax}" (&gdtr),
     );
+}
+
+pub inline fn flushJmp(comptime src: std.builtin.SourceLocation) void {
+    asm volatile (std.fmt.comptimePrint(
+            "jmp {0s}.{1}.{2}.flush_jmp\n{0s}.{1}.{2}.flush_jmp:",
+            .{ src.fn_name, src.line, src.column },
+        ));
 }

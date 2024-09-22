@@ -11,6 +11,8 @@ pub const cmos = @import("cmos.zig");
 pub const floppy = @import("floppy.zig");
 pub const dma = @import("dma.zig");
 pub const timer = @import("timer.zig");
+pub const log = @import("log.zig");
+pub const paging = @import("paging.zig");
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);
@@ -38,5 +40,5 @@ pub fn print(comptime fmt: []const u8, args: anytype) void {
 
 pub inline fn halt() noreturn {
     @setCold(true);
-    while (true) x86.ass.halt();
+    while (true) x86.raw.halt();
 }

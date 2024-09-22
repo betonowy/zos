@@ -34,8 +34,8 @@ pub fn init(p_dma_mem: []u8) void {
     log.debug("fd1: {s}", .{drive_info.fd1.str()});
 
     msrWaitRqm();
-    x86.ass.outb(Registers.data_fifo.toU16(), Commands.version.toU8());
-    log.debug("Version: 0x{x}", .{x86.ass.inb(Registers.data_fifo.toU16())});
+    x86.raw.outb(Registers.data_fifo.toU16(), Commands.version.toU8());
+    log.debug("Version: 0x{x}", .{x86.raw.inb(Registers.data_fifo.toU16())});
 
     dma.singleChannelMask(.{ .channel = 2, .state = true });
     dma.setupMemory(2, @intCast(@intFromPtr(p_dma_mem.ptr)), @intCast(p_dma_mem.len));
@@ -474,7 +474,7 @@ const DorSetup = packed struct {
 };
 
 fn dorSetup(params: DorSetup) void {
-    x86.ass.outb(Registers.digital_output.toU16(), params.toU8());
+    x86.raw.outb(Registers.digital_output.toU16(), params.toU8());
 }
 
 const MainStatusRegister = packed struct {
@@ -497,23 +497,23 @@ const MainStatusRegister = packed struct {
 };
 
 fn msrWaitRqm() void {
-    while (MainStatusRegister.fromU8(x86.ass.inb(Registers.main_status_datarate_select.toU16())).rqm == false) {}
+    while (MainStatusRegister.fromU8(x86.raw.inb(Registers.main_status_datarate_select.toU16())).rqm == false) {}
 }
 
 fn msrWaitRqmDio(dio: bool) void {
-    while (MainStatusRegister.fromU8(x86.ass.inb(Registers.main_status_datarate_select.toU16())).isRqmDio(dio) == false) {}
+    while (MainStatusRegister.fromU8(x86.raw.inb(Registers.main_status_datarate_select.toU16())).isRqmDio(dio) == false) {}
 }
 
 fn fifoSendBytes(bytes: []const u8) void {
     for (bytes, 0..) |byte, i| {
         if (i == 0) msrWaitRqm() else msrWaitRqmDio(false);
-        x86.ass.outb(Registers.data_fifo.toU16(), byte);
+        x86.raw.outb(Registers.data_fifo.toU16(), byte);
     }
 }
 
 fn fifoRecvBytes(bytes: []u8) void {
     for (bytes) |*byte| {
         msrWaitRqm();
-        byte.* = x86.ass.inb(Registers.data_fifo.toU16());
+        byte.* = x86.raw.inb(Registers.data_fifo.toU16());
     }
 }

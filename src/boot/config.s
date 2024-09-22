@@ -1,6 +1,15 @@
 %ifndef FILE_CONFIG_S
 %define FILE_CONFIG_S
 
+; For different image sizes
+; 5.25 inch dd  320k - SECTORS:  640, SECTORS_PER_TRACK:  8, HEADS: 2
+; 5.25 inch dd  360k - SECTORS:  720, SECTORS_PER_TRACK:  9, HEADS: 2
+; 5.25 inch dd  640k - SECTORS: 1280, SECTORS_PER_TRACK:  8, HEADS: 2
+; 5.25 inch dd  720k - SECTORS: 1440, SECTORS_PER_TRACK:  9, HEADS: 2
+; 5.25 inch qd 1200k - SECTORS: 2400, SECTORS_PER_TRACK: 15, HEADS: 2
+; 3.50 inch dd  720k - SECTORS: 1440, SECTORS_PER_TRACK:  9, HEADS: 2
+; 3.50 inch dd 1440k - SECTORS: 2880, SECTORS_PER_TRACK: 18, HEADS: 2
+
 ; Filesystem constants
 %define SECTOR_SIZE 512
 %define SECTORS_PER_CLUSTER 1

@@ -32,7 +32,7 @@ pub const SingleChannelMaskPayload = packed struct {
 };
 
 pub fn singleChannelMask(payload: SingleChannelMaskPayload) void {
-    x86.ass.outb(port_dma_m_single_ch_mask, payload.toU3());
+    x86.raw.outb(port_dma_m_single_ch_mask, payload.toU3());
 }
 
 pub const MultiChannelMaskPayload = packed struct {
@@ -47,7 +47,7 @@ pub const MultiChannelMaskPayload = packed struct {
 };
 
 pub fn multiChannelMask(payload: MultiChannelMaskPayload) void {
-    x86.ass.outb(port_dma_m_multich_mask, payload.toU4());
+    x86.raw.outb(port_dma_m_multich_mask, payload.toU4());
 }
 
 pub const SetModePayload = packed struct {
@@ -81,19 +81,19 @@ pub const SetModePayload = packed struct {
 };
 
 pub fn setMode(payload: SetModePayload) void {
-    x86.ass.outb(port_dma_m_mode, payload.toU8());
+    x86.raw.outb(port_dma_m_mode, payload.toU8());
 }
 
 pub fn masterReset() void {
-    x86.ass.outb(port_dma_m_master_reset, undefined);
+    x86.raw.outb(port_dma_m_master_reset, undefined);
 }
 
 pub fn maskReset() void {
-    x86.ass.outb(port_dma_m_mask_reset, undefined);
+    x86.raw.outb(port_dma_m_mask_reset, undefined);
 }
 
 pub fn flipFlopReset() void {
-    x86.ass.outb(port_dma_m_flip_flop, undefined);
+    x86.raw.outb(port_dma_m_flip_flop, undefined);
 }
 
 pub const StatusPayload = packed struct {
@@ -154,10 +154,10 @@ pub fn setupMemory(channel: u2, addr: u24, len: u16) void {
     const dma_len = len - 1;
 
     flipFlopReset();
-    x86.ass.outb(port_addr, @truncate(addr >> 0));
-    x86.ass.outb(port_addr, @truncate(addr >> 8));
+    x86.raw.outb(port_addr, @truncate(addr >> 0));
+    x86.raw.outb(port_addr, @truncate(addr >> 8));
     flipFlopReset();
-    x86.ass.outb(port_count, @truncate(dma_len >> 0));
-    x86.ass.outb(port_count, @truncate(dma_len >> 8));
-    x86.ass.outb(port_page, @intCast(addr >> 16));
+    x86.raw.outb(port_count, @truncate(dma_len >> 0));
+    x86.raw.outb(port_count, @truncate(dma_len >> 8));
+    x86.raw.outb(port_page, @intCast(addr >> 16));
 }

@@ -58,9 +58,9 @@ const port_cmos_b = 0x71;
 fn setAddress(address: u7) void {
     // For now this kernel never disables NMI
     // so to simplify that we never set the MSB.
-    x86.ass.outb(port_cmos_a, address);
+    x86.raw.outb(port_cmos_a, address);
 }
 
 fn readRegister() u8 {
-    return x86.ass.inb(port_cmos_b);
+    return x86.raw.inb(port_cmos_b);
 }
