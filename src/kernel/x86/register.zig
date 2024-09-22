@@ -78,3 +78,11 @@ comptime {
     std.debug.assert(@bitSizeOf(CR2) == 32);
     std.debug.assert(@bitSizeOf(CR3) == 32);
 }
+
+pub const ESP = struct {
+    pub fn load() u32 {
+        return asm ("mov %esp, %eax"
+            : [ret] "={eax}" (-> u32),
+        );
+    }
+};

@@ -54,6 +54,28 @@ pub inline fn lgdt(gdtr: x86.segment.DescriptorRegister) void {
     );
 }
 
+/// Load local descriptor table register
+pub inline fn lldt(selector: u16) void {
+    _ = asm volatile ("lldt %ax"
+        : [ret] "={ax}" (-> usize),
+        : [tr] "{ax}" (selector),
+    );
+}
+
+/// Load task register
+pub inline fn ltr(selector: u16) void {
+    _ = asm volatile ("ltr %ax"
+        : [ret] "={ax}" (-> u16),
+        : [tr] "{ax}" (selector),
+    );
+}
+
+pub inline fn str() u16 {
+    return asm ("str %ax"
+        : [ret] "={ax}" (-> u16),
+    );
+}
+
 pub inline fn flushJmp(comptime src: std.builtin.SourceLocation) void {
     asm volatile (std.fmt.comptimePrint(
             "jmp {0s}.{1}.{2}.flush_jmp\n{0s}.{1}.{2}.flush_jmp:",
