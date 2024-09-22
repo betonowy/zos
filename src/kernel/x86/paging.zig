@@ -4,7 +4,7 @@ const x86 = @import("root.zig");
 pub const DirectoryBaseRegister = packed struct {
     address_high: u20,
 
-    pub fn init(ptr: *volatile DirectoryEntryArray) @This() {
+    pub fn init(ptr: *DirectoryEntryArray) @This() {
         std.debug.assert(x86.paging.isAligned(ptr));
         return .{ .address_high = @intCast(@intFromPtr(ptr) >> 12) };
     }
@@ -30,12 +30,12 @@ pub const DirectoryEntry = packed struct {
     /// High 20 bits of page table address.
     b31_12: u20,
 
-    pub fn setAddress(self: *volatile @This(), ptr: *volatile anyopaque) void {
+    pub fn setAddress(self: *@This(), ptr: *anyopaque) void {
         std.debug.assert(x86.paging.isAligned(ptr));
         self.b31_12 = @intCast(@intFromPtr(ptr) >> 12);
     }
 
-    pub fn table(self: @This()) *volatile TableEntryArray {
+    pub fn table(self: @This()) *TableEntryArray {
         return @ptrFromInt(@as(usize, self.b31_12) << 12);
     }
 };
@@ -92,6 +92,6 @@ pub const TableEntryArray = struct {
     entries: [1024]TableEntry,
 };
 
-pub fn isAligned(ptr: *const volatile anyopaque) bool {
+pub fn isAligned(ptr: *const anyopaque) bool {
     return @as(u12, @truncate(@intFromPtr(ptr))) == 0;
 }

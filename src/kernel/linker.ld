@@ -1,6 +1,5 @@
 MEMORY {
-    idt_mem (wxa) : org = 0x0, l = 0x600
-    kernel_region (wxa) : org = 0x600, l = 0x8000 - 0x600 - 0x1000
+    kernel_region (wxa) : org = 0x0, l = 0x8000 - 0x1000
 }
 
 PHDRS {
@@ -13,10 +12,6 @@ PHDRS {
 
 SECTIONS {
     . = SIZEOF_HEADERS;
-
-    .idt : ALIGN(4) {
-        *(.idt)
-    } > idt_mem :idt
 
     .text : ALIGN(4) {
         *(.text.entry)

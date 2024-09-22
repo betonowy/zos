@@ -22,12 +22,10 @@ pub const Descriptor = packed struct {
     flags: Flags,
     base_24_32: u8,
 
-    pub const empty = std.mem.zeroes(@This());
-
     pub const Specialization = packed union {
         pub const System = packed struct {
             variant: enum(u4) { tss_16 = 0x1, ldt = 0x2, tss_16_busy = 0x3, tss_32 = 0x9, tss_32_busy = 0xb },
-            always_true: bool = true,
+            always_false: bool = false,
             privilege: u2,
             present: bool = true,
         };
@@ -37,7 +35,7 @@ pub const Descriptor = packed struct {
             readable: bool,
             conforming: enum(u1) { exact, less_equal },
             executable: bool = true,
-            always_false: bool = false,
+            always_true: bool = true,
             privilege: u2,
             present: bool = true,
         };
@@ -47,7 +45,7 @@ pub const Descriptor = packed struct {
             writable: bool,
             direction: enum(u1) { up, down },
             executable: bool = false,
-            always_false: bool = false,
+            always_true: bool = true,
             privilege: u2,
             present: bool = true,
         };
@@ -57,7 +55,7 @@ pub const Descriptor = packed struct {
         data: Data,
 
         pub fn check(self: @This()) enum { system, code, data } {
-            if (self.system.always_true) return .system;
+            if (self.system.always_false) return .system;
             return if (self.code.executable) .code else .data;
         }
     };

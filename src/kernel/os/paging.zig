@@ -3,8 +3,8 @@ const x86 = @import("x86");
 
 const log = std.log.scoped(.paging);
 
-const page_dir: *volatile x86.paging.DirectoryEntryArray = @ptrFromInt(0xa000);
-const page_table: *volatile x86.paging.TableEntryArray = @ptrFromInt(0xb000);
+const page_dir: *x86.paging.DirectoryEntryArray = @ptrFromInt(0xa000);
+const page_table: *x86.paging.TableEntryArray = @ptrFromInt(0xb000);
 
 pub fn init(table: []const x86.segment.InterruptDescriptor) void {
     @memset(std.mem.asBytes(page_dir), 0);

@@ -21,7 +21,7 @@ pub const CR0 = packed struct {
     const ExtensionType = enum(u1) { i80287, i80387 };
 
     pub fn load() @This() {
-        return asm volatile ("mov %cr0, %eax"
+        return asm ("mov %cr0, %eax"
             : [ret] "={eax}" (-> CR0),
         );
     }
@@ -38,7 +38,7 @@ pub const CR2 = packed struct {
     page_fault_linear_address: u32,
 
     pub fn load() @This() {
-        return asm volatile ("mov %cr2, %eax"
+        return asm ("mov %cr2, %eax"
             : [ret] "={eax}" (-> CR2),
         );
     }
@@ -60,7 +60,7 @@ pub const CR3 = packed struct {
     pdbr: paging.DirectoryBaseRegister,
 
     pub fn load() @This() {
-        return asm volatile ("mov %cr3, %eax"
+        return asm ("mov %cr3, %eax"
             : [ret] "={eax}" (-> CR3),
         );
     }

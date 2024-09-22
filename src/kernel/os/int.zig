@@ -28,7 +28,7 @@ const ICW4_SFNM = 0x10;
 const PIC_READ_IRR = 0x0a;
 const PIC_READ_ISR = 0x0b;
 
-pub fn init(table: []volatile x86.segment.InterruptDescriptor) void {
+pub fn init(table: []x86.segment.InterruptDescriptor) void {
     initDefaults(table, gate(.interrupt, nullHandler));
 
     initRoutines(table, &.{
@@ -140,7 +140,7 @@ fn gate(comptime gate_type: GateType, comptime dest: DestinationType(gate_type))
 
 const SetupRoutinesParam = struct { index: u8, routine: *const fn () callconv(.Naked) void };
 
-fn initDefaults(table: []volatile x86.segment.InterruptDescriptor, routine: *const fn () callconv(.Naked) void) void {
+fn initDefaults(table: []x86.segment.InterruptDescriptor, routine: *const fn () callconv(.Naked) void) void {
     @memset(table, x86.segment.InterruptDescriptor.init(.{
         .gate = .int_32,
         .privilege = 0,
@@ -149,7 +149,7 @@ fn initDefaults(table: []volatile x86.segment.InterruptDescriptor, routine: *con
     }));
 }
 
-fn initRoutines(table: []volatile x86.segment.InterruptDescriptor, params: []const SetupRoutinesParam) void {
+fn initRoutines(table: []x86.segment.InterruptDescriptor, params: []const SetupRoutinesParam) void {
     for (params) |param| table[param.index] = x86.segment.InterruptDescriptor.init(.{
         .gate = .int_32,
         .privilege = 0,
